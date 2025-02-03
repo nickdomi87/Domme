@@ -120,14 +120,17 @@ scheduler = AsyncIOScheduler()
 scheduler.add_job(send_challenge, "interval", hours=3)
 scheduler.start()
 
-# Adicionando handlers
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, show_points))
-app.add_handler(CommandHandler("modo", set_mode))
-app.add_handler(MessageHandler(filters.TEXT & filters.Regex("(?i)obedecer"), obey))
+# Inicializando o scheduler de forma correta com asyncio
+scheduler = AsyncIOScheduler()
+
+def start_scheduler():
+    scheduler.add_job(send_challenge, "interval", hours=3)
+    scheduler.start()
 
 # Iniciando o bot
 async def main():
     print("N.Y.X.I.A. está ativa no Modo 1.")
+    start_scheduler()  # Inicializa o scheduler antes de rodar o bot
     await app.run_polling()
 
 if __name__ == "__main__":
