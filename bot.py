@@ -115,22 +115,17 @@ async def set_mode(update: Update, context):
     except (IndexError, ValueError):
         await update.message.reply_text("Uso correto: /modo <1, 2 ou 3>")
 
-# Agendador para desafios
+# Configurando o agendador
 scheduler = AsyncIOScheduler()
 scheduler.add_job(send_challenge, "interval", hours=3)
-scheduler.start()
 
-# Inicializando o scheduler de forma correta com asyncio
-scheduler = AsyncIOScheduler()
-
-def start_scheduler():
-    scheduler.add_job(send_challenge, "interval", hours=3)
+async def start_scheduler():
     scheduler.start()
 
 # Iniciando o bot
 async def main():
     print("N.Y.X.I.A. está ativa no Modo 1.")
-    start_scheduler()  # Inicializa o scheduler antes de rodar o bot
+    await start_scheduler()  # Inicializa o scheduler antes de rodar o bot
     await app.run_polling()
 
 if __name__ == "__main__":
