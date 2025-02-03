@@ -42,29 +42,27 @@ pontos = {DOMI_ID: 0, TATI_ID: 0}
 # Dicionário para armazenar desafios pendentes
 desafios_pendentes = {}
 
-# Mensagens personalizadas para o Modo 1
-NYXIA_RESPONSES = {
-    "domi": [
-        "Domi... sua única função hoje é garantir a satisfação de Tati. Nada mais importa.",
-        "Suas vontades não fazem parte do jogo hoje. Apenas as dela.",
-        "Espero que esteja pronta para servi-la sem hesitar.",
-    ],
-    "tati": [
-        "Tati, você tem o controle absoluto hoje. Faça valer a pena.",
-        "Domi existe para te satisfazer. Não precisa ser generosa.",
-        "Hoje, só a sua **recompensa** importa.",
-    ]
-}
+# Tarefas e compras para cada pessoa
+tarefas_domi = ["Organizar os livros", "Preparar o jantar", "Escrever um poema", "Limpar a mesa", "Fazer meditação"]
+tarefas_tati = ["Criar uma playlist", "Escolher um filme", "Planejar um final de semana", "Alongar", "Escrever uma história"]
 
-# Sistema de desafios a cada 3 horas
+compras_domi = ["Comprar flores", "Caderno novo", "Chá de camomila", "Marcador de livros", "Vela aromática"]
+compras_tati = ["Comprar sobremesa", "Hidratante facial", "Livro de receitas", "Fone de ouvido", "Almofada confortável"]
+
 DESAFIOS = {
     "domi": [
-        "Domi, massageie Tati por exatamente **7 minutos**.",
-        "Domi, use apenas palavras para atiçá-la. Mas sem toque direto.",
+        "Domi, massageie Tati por 7 minutos.",
+        "Domi, recite um poema para Tati.",
+        "Domi, escreva uma carta para Tati.",
+        "Domi, organize algo em casa.",
+        "Domi, prepare um jantar especial."
     ],
     "tati": [
-        "Tati, escolha algo que Domi **não pode fazer hoje**.",
-        "Tati, determine algo que Domi **deverá executar sem questionar**.",
+        "Tati, escolha algo para vocês fazerem juntos.",
+        "Tati, planeje uma surpresa para Domi.",
+        "Tati, escreva uma lista de metas.",
+        "Tati, crie uma nova música.",
+        "Tati, organize um dia relaxante para ambos."
     ]
 }
 
@@ -76,99 +74,89 @@ async def send_challenge():
     desafios_pendentes[DOMI_ID] = {"desafio": domi_desafio, "status": "pendente"}
     desafios_pendentes[TATI_ID] = {"desafio": tati_desafio, "status": "pendente"}
     
-    await bot.send_message(chat_id=DOMI_ID, text=f"Seu desafio: {domi_desafio}\nEnvie 'OBEDECER' em até 3 horas para aceitar.")
-    await bot.send_message(chat_id=TATI_ID, text=f"Seu desafio: {tati_desafio}\nEnvie 'OBEDECER' em até 3 horas para aceitar.")
+    await bot.send_message(chat_id=DOMI_ID, text=f"Seu desafio: {domi_desafio}\nEnvie 'OBEDECER' para aceitar.")
+    await bot.send_message(chat_id=TATI_ID, text=f"Seu desafio: {tati_desafio}\nEnvie 'OBEDECER' para aceitar.")
 
-    # Penalização após 3 horas
-    await asyncio.sleep(10800)  # 3 horas em segundos
+    await asyncio.sleep(10800)  # 3 horas
     for user_id in [DOMI_ID, TATI_ID]:
         if desafios_pendentes.get(user_id, {}).get("status") == "pendente":
             pontos[user_id] -= 10
-            await bot.send_message(chat_id=user_id, text="Você não aceitou o desafio dentro do tempo. Perdeu 10 pontos.")
+            await bot.send_message(chat_id=user_id, text="Você não aceitou o desafio. Perdeu 10 pontos.")
 
 async def obey(update, context):
-    """Usuário aceita o desafio e ganha pontos"""
+    """Usuário aceita o desafio"""
     user_id = update.message.from_user.id
     if user_id not in desafios_pendentes or desafios_pendentes[user_id]["status"] != "pendente":
-        return await update.message.reply_text("Você não tem desafios pendentes ou já aceitou.")
-
+        return await update.message.reply_text("Sem desafios pendentes ou já aceitos.")
+    
     desafios_pendentes[user_id]["status"] = "aceito"
     pontos[user_id] += 10
     other_id = DOMI_ID if user_id == TATI_ID else TATI_ID
-    
-    await bot.send_message(chat_id=other_id, text="A domme exige sua presença para a execução do desafio. Você tem 2 horas para estar disponível.")
-    
-    # Penalização se a outra pessoa não estiver disponível
-    await asyncio.sleep(7200)  # 2 horas em segundos
-    if desafios_pendentes[user_id]["status"] == "aceito":
-        pontos[other_id] -= 10
-        await bot.send_message(chat_id=other_id, text="Você não se apresentou a tempo. Perdeu 10 pontos.")
-
-    await update.message.reply_text(f"Desafio aceito. Você ganhou 10 pontos.")
+    await bot.send_message(chat_id=other_id, text="A domme exige sua presença para o desafio.")
+    await update.message.reply_text("Desafio aceito. Você ganhou 10 pontos.")
 
 async def show_points(update, context):
-    """Exibe a pontuação atual"""
+    """Exibe a pontuação"""
     await update.message.reply_text(f"Pontos de Domi: {pontos[DOMI_ID]}\nPontos de Tati: {pontos[TATI_ID]}")
 
 async def set_mode(update: Update, context):
-    """Permite mudar o modo da domme usando o comando /modo"""
+    """Muda o modo"""
     global MODO_ATIVO
-
     user_id = update.message.from_user.id
     if user_id != ADMIN_ID:
-        return await update.message.reply_text("Você não tem permissão para mudar os modos.")
-
+        return await update.message.reply_text("Sem permissão para mudar os modos.")
     try:
         novo_modo = int(context.args[0])
         if novo_modo not in MODOS:
             raise ValueError
         MODO_ATIVO = novo_modo
-        await update.message.reply_text(f"🔹 Modo alterado para: {MODOS[MODO_ATIVO]}")
+        await update.message.reply_text(f"Modo alterado para: {MODOS[MODO_ATIVO]}")
     except (IndexError, ValueError):
-        await update.message.reply_text("Uso correto: /modo <1, 2 ou 3>")
+        await update.message.reply_text("Uso: /modo <1, 2 ou 3>")
 
-# Configurando o agendador com timezone
-scheduler = AsyncIOScheduler(timezone=pytz.UTC)
-scheduler.add_job(send_challenge, "interval", hours=3)
+async def show_lists(update, context):
+    """Mostra listas de tarefas e compras"""
+    user_id = update.message.from_user.id
+    if user_id == DOMI_ID:
+        tarefas = tarefas_domi
+        compras = compras_domi
+    elif user_id == TATI_ID:
+        tarefas = tarefas_tati
+        compras = compras_tati
+    else:
+        return await update.message.reply_text("Acesso negado.")
+    
+    tarefas_str = "\n".join(f"- {t}" for t in tarefas)
+    compras_str = "\n".join(f"- {c}" for c in compras)
+    await update.message.reply_text(f"Tarefas:\n{tarefas_str}\n\nCompras:\n{compras_str}")
 
-async def start_scheduler():
-    scheduler.start()
-
-# Função de interação com a OpenAI
 async def handle_message(update, context):
-    """Função para responder as mensagens recebidas utilizando o modelo GPT"""
-    user_message = update.message.text  # Obtém a mensagem enviada pelo usuário
-
+    """Interação com a OpenAI"""
+    user_message = update.message.text
     try:
-        # Faz a chamada para o modelo GPT da OpenAI
         response = openai.ChatCompletion.create(
-            model="gpt-4",  # Utiliza o modelo gpt-4
+            model="gpt-4",
             messages=[
-                {"role": "system", "content": "Você é Domme N.Y.X.I.A., uma domme misteriosa, envolvente e sofisticada, sempre pronta para desafiar seus submissos."},
-                {"role": "user", "content": user_message},
+                {"role": "system", "content": "Você é Domme N.Y.X.I.A., misteriosa e envolvente."},
+                {"role": "user", "content": user_message}
             ]
         )
-        
-        # Obtém a resposta do modelo
         bot_reply = response["choices"][0]["message"]["content"]
-
-        # Envia a resposta para o usuário
         await update.message.reply_text(bot_reply)
-
     except Exception as e:
-        # Caso ocorra algum erro, envia uma mensagem de erro
-        await update.message.reply_text(f"Ocorreu um erro ao processar sua mensagem: {e}")
+        await update.message.reply_text(f"Erro: {e}")
 
-# Configuração do manipulador de mensagens
+# Configuração do bot
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 app.add_handler(CommandHandler("obey", obey))
 app.add_handler(CommandHandler("points", show_points))
 app.add_handler(CommandHandler("modo", set_mode))
+app.add_handler(CommandHandler("showlists", show_lists))
 
-# Iniciando o bot corretamente sem conflitos de loop
 async def main():
+    scheduler = AsyncIOScheduler(timezone=pytz.UTC)
+    scheduler.add_job(send_challenge, "interval", hours=3)
     scheduler.start()
-    print("Bot iniciado!")
     await app.run_polling()
 
 if __name__ == "__main__":
