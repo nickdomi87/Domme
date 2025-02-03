@@ -116,14 +116,22 @@ async def set_mode(update: Update, context):
     except (IndexError, ValueError):
         await update.message.reply_text("Uso correto: /modo <1, 2 ou 3>")
 
-# Configurando o agendador
-scheduler = AsyncIOScheduler()
+# Configurando o agendador com timezone
+from apscheduler.util import timezone
+import pytz
+
+scheduler = AsyncIOScheduler(timezone=pytz.UTC)
 scheduler.add_job(send_challenge, "interval", hours=3)
 
 async def start_scheduler():
     scheduler.start()
 
 # Iniciando o bot corretamente sem conflitos de loop
+async def main():
+    print("Bot iniciado!")
+    await app.run_polling()
+
+# Iniciando o loop asyncio
 if __name__ == "__main__":
     nest_asyncio.apply()  # Aplica o patch para o asyncio
     asyncio.get_event_loop().run_until_complete(main())
