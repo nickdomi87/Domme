@@ -1,14 +1,25 @@
 import asyncio
 import random
+import os
 from telegram import Bot, Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import nest_asyncio
+import openai
+from dotenv import load_dotenv
+from apscheduler.util import timezone
+import pytz
+
+# Carrega variáveis de ambiente
+load_dotenv()
 
 # Configuração do bot
-TOKEN = "7773946789:AAFFkXVs8dtGOaz_p738ZXkneAmvmpPZ8Bc"
+TOKEN = os.getenv("TELEGRAM_TOKEN")
 bot = Bot(token=TOKEN)
 app = Application.builder().token(TOKEN).build()
+
+# Chave da API da OpenAI
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # IDs das pessoas autorizadas
 DOMI_ID = 1007537544  # ID de Domi
@@ -117,21 +128,47 @@ async def set_mode(update: Update, context):
         await update.message.reply_text("Uso correto: /modo <1, 2 ou 3>")
 
 # Configurando o agendador com timezone
-from apscheduler.util import timezone
-import pytz
-
 scheduler = AsyncIOScheduler(timezone=pytz.UTC)
 scheduler.add_job(send_challenge, "interval", hours=3)
 
 async def start_scheduler():
     scheduler.start()
 
+# Função de interação com a OpenAI
+async def handle_message(update, context):
+    """Função para responder as mensagens recebidas utilizando a OpenAI"""
+    user_message = update.message.text  # Obtém a mensagem enviada pelo usuário
+
+    try:
+        # Faz a chamada para o modelo GPT da OpenAI
+        response = openai.Completion.create(
+            model="text-davinci-003",  # Modelo GPT utilizado
+            prompt=user_message,
+            max_tokens=150
+        )
+        
+        # Obtém a resposta do modelo
+        bot_reply = response.choices[0].text.strip()
+
+        # Envia a resposta para o usuário
+        await update.message.reply_text(bot_reply)
+
+    except Exception as e:
+        # Caso ocorra algum erro, envia uma mensagem de erro
+        await update.message.reply_text(f"Ocorreu um erro ao processar sua mensagem: {e}")
+
+# Configuração do manipulador de mensagens
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+app.add_handler(CommandHandler("obey", obey))
+app.add_handler(CommandHandler("points", show_points))
+app.add_handler(CommandHandler("modo", set_mode))
+
 # Iniciando o bot corretamente sem conflitos de loop
 async def main():
+    scheduler.start()
     print("Bot iniciado!")
     await app.run_polling()
 
-# Iniciando o loop asyncio
 if __name__ == "__main__":
-    nest_asyncio.apply()  # Aplica o patch para o asyncio
-    asyncio.get_event_loop().run_until_complete(main())
+    nest_asyncio.apply()
+    asyncio.run(main())
