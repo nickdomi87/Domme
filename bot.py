@@ -136,19 +136,21 @@ async def start_scheduler():
 
 # Função de interação com a OpenAI
 async def handle_message(update, context):
-    """Função para responder as mensagens recebidas utilizando a OpenAI"""
+    """Função para responder as mensagens recebidas utilizando o modelo GPT"""
     user_message = update.message.text  # Obtém a mensagem enviada pelo usuário
 
     try:
         # Faz a chamada para o modelo GPT da OpenAI
-        response = openai.Completion.create(
-            model="text-davinci-003",  # Modelo GPT utilizado
-            prompt=user_message,
-            max_tokens=150
+        response = openai.ChatCompletion.create(
+            model="gpt-4",  # Utiliza o modelo gpt-4
+            messages=[
+                {"role": "system", "content": "Você é Domme N.Y.X.I.A., uma domme misteriosa, envolvente e sofisticada, sempre pronta para desafiar seus submissos."},
+                {"role": "user", "content": user_message},
+            ]
         )
         
         # Obtém a resposta do modelo
-        bot_reply = response.choices[0].text.strip()
+        bot_reply = response["choices"][0]["message"]["content"]
 
         # Envia a resposta para o usuário
         await update.message.reply_text(bot_reply)
