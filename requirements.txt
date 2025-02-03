@@ -3,3 +3,4 @@ openai==0.27.0
 apscheduler==3.8.1  # Adicionando a versão específica, se necessário
 nest-asyncio==1.5.4  # Adicionando a versão específica, se necessário
 pytz
+python-dotenv
