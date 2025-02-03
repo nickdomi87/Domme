@@ -3,6 +3,7 @@ import random
 from telegram import Bot, Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import nest_asyncio
 
 # Configuração do bot
 TOKEN = "7773946789:AAFFkXVs8dtGOaz_p738ZXkneAmvmpPZ8Bc"
@@ -74,7 +75,7 @@ async def send_challenge():
             pontos[user_id] -= 10
             await bot.send_message(chat_id=user_id, text="Você não aceitou o desafio dentro do tempo. Perdeu 10 pontos.")
 
-async def obey(update: Update, context):
+async def obey(update, context):
     """Usuário aceita o desafio e ganha pontos"""
     user_id = update.message.from_user.id
     if user_id not in desafios_pendentes or desafios_pendentes[user_id]["status"] != "pendente":
@@ -94,7 +95,7 @@ async def obey(update: Update, context):
 
     await update.message.reply_text(f"Desafio aceito. Você ganhou 10 pontos.")
 
-async def show_points(update: Update, context):
+async def show_points(update, context):
     """Exibe a pontuação atual"""
     await update.message.reply_text(f"Pontos de Domi: {pontos[DOMI_ID]}\nPontos de Tati: {pontos[TATI_ID]}")
 
@@ -104,7 +105,7 @@ async def set_mode(update: Update, context):
 
     user_id = update.message.from_user.id
     if user_id != ADMIN_ID:
-        return await update.message.reply_text("Você não tem permissão para mudar o modo.")
+        return await update.message.reply_text("Você não tem permissão para mudar os modos.")
 
     try:
         novo_modo = int(context.args[0])
@@ -124,6 +125,5 @@ async def start_scheduler():
 
 # Iniciando o bot corretamente sem conflitos de loop
 if __name__ == "__main__":
-    import nest_asyncio
-    nest_asyncio.apply()
+    nest_asyncio.apply()  # Aplica o patch para o asyncio
     asyncio.get_event_loop().run_until_complete(main())
