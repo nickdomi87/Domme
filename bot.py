@@ -4,7 +4,7 @@ import openai
 
 # Tokens e configurações
 import os
-TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 import os
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
