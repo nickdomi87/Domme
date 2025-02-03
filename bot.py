@@ -30,39 +30,29 @@ pontos = {DOMI_ID: 0, TATI_ID: 0}
 # Dicionário para armazenar desafios pendentes
 desafios_pendentes = {}
 
-# **📌 Mensagens Personalizadas para o Modo 1**
+# Mensagens personalizadas para o Modo 1
 NYXIA_RESPONSES = {
     "domi": [
         "Domi... sua única função hoje é garantir a satisfação de Tati. Nada mais importa.",
         "Suas vontades não fazem parte do jogo hoje. Apenas as dela.",
         "Espero que esteja pronta para servi-la sem hesitar.",
-        "Você deve manter o foco. Hoje não há **recompensas** para você.",
-        "Mostre que pode ser útil de outras formas. O prazer dela vem primeiro.",
     ],
     "tati": [
         "Tati, você tem o controle absoluto hoje. Faça valer a pena.",
         "Domi existe para te satisfazer. Não precisa ser generosa.",
-        "Provoque, conduza, instigue. Mas sem concessões.",
-        "Escolha um **limite** para Domi. Algo que a mantenha onde você quer.",
-        "Hoje, só a sua **recompensa** importa. Mas não há excessos para ela.",
+        "Hoje, só a sua **recompensa** importa.",
     ]
 }
 
-# **📌 Sistema de Desafios a Cada 3 Horas**
+# Sistema de desafios a cada 3 horas
 DESAFIOS = {
     "domi": [
-        "Domi, massageie Tati por exatamente **7 minutos e 30 segundos**. Nem um segundo a mais ou a menos.",
+        "Domi, massageie Tati por exatamente **7 minutos**.",
         "Domi, use apenas palavras para atiçá-la. Mas sem toque direto.",
-        "Domi, observe e mantenha suas mãos longe. Apenas olhe.",
-        "Domi, beije Tati em um único lugar por **3 minutos seguidos**, sem pausas.",
-        "Domi, encontre uma forma de agradá-la sem tocá-la diretamente.",
     ],
     "tati": [
         "Tati, escolha algo que Domi **não pode fazer hoje**.",
         "Tati, determine algo que Domi **deverá executar sem questionar**.",
-        "Tati, faça Domi se esforçar ao máximo por você hoje.",
-        "Tati, conduza tudo até o **limite do prazer**... e pare exatamente quando ela estiver vulnerável.",
-        "Tati, sua missão hoje é manter Domi esperando e querendo mais.",
     ]
 }
 
@@ -77,14 +67,14 @@ async def send_challenge():
     await bot.send_message(chat_id=DOMI_ID, text=f"Seu desafio: {domi_desafio}\nEnvie 'OBEDECER' em até 3 horas para aceitar.")
     await bot.send_message(chat_id=TATI_ID, text=f"Seu desafio: {tati_desafio}\nEnvie 'OBEDECER' em até 3 horas para aceitar.")
 
-    # Agendando penalização se não aceitarem em 3 horas
+    # Penalização após 3 horas
     await asyncio.sleep(10800)  # 3 horas em segundos
     for user_id in [DOMI_ID, TATI_ID]:
         if desafios_pendentes.get(user_id, {}).get("status") == "pendente":
             pontos[user_id] -= 10
             await bot.send_message(chat_id=user_id, text="Você não aceitou o desafio dentro do tempo. Perdeu 10 pontos.")
 
-async def obey(update, context):
+async def obey(update: Update, context):
     """Usuário aceita o desafio e ganha pontos"""
     user_id = update.message.from_user.id
     if user_id not in desafios_pendentes or desafios_pendentes[user_id]["status"] != "pendente":
@@ -96,7 +86,7 @@ async def obey(update, context):
     
     await bot.send_message(chat_id=other_id, text="A domme exige sua presença para a execução do desafio. Você tem 2 horas para estar disponível.")
     
-    # Agendando penalização se a outra pessoa não estiver disponível em 2 horas
+    # Penalização se a outra pessoa não estiver disponível
     await asyncio.sleep(7200)  # 2 horas em segundos
     if desafios_pendentes[user_id]["status"] == "aceito":
         pontos[other_id] -= 10
@@ -104,7 +94,7 @@ async def obey(update, context):
 
     await update.message.reply_text(f"Desafio aceito. Você ganhou 10 pontos.")
 
-async def show_points(update, context):
+async def show_points(update: Update, context):
     """Exibe a pontuação atual"""
     await update.message.reply_text(f"Pontos de Domi: {pontos[DOMI_ID]}\nPontos de Tati: {pontos[TATI_ID]}")
 
@@ -125,7 +115,7 @@ async def set_mode(update: Update, context):
     except (IndexError, ValueError):
         await update.message.reply_text("Uso correto: /modo <1, 2 ou 3>")
 
-# **📌 Agendador para desafios**
+# Agendador para desafios
 scheduler = AsyncIOScheduler()
 scheduler.add_job(send_challenge, "interval", hours=3)
 scheduler.start()
@@ -133,6 +123,7 @@ scheduler.start()
 # Adicionando handlers
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, show_points))
 app.add_handler(CommandHandler("modo", set_mode))
+app.add_handler(MessageHandler(filters.TEXT & filters.Regex("(?i)obedecer"), obey))
 
 # Iniciando o bot
 async def main():
