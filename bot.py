@@ -122,11 +122,8 @@ scheduler.add_job(send_challenge, "interval", hours=3)
 async def start_scheduler():
     scheduler.start()
 
-# Iniciando o bot
-async def main():
-    print("N.Y.X.I.A. está ativa no Modo 1.")
-    await start_scheduler()  # Inicializa o scheduler antes de rodar o bot
-    await app.run_polling()
-
+# Iniciando o bot corretamente sem conflitos de loop
 if __name__ == "__main__":
-    asyncio.run(main())
+    import nest_asyncio
+    nest_asyncio.apply()
+    asyncio.get_event_loop().run_until_complete(main())
