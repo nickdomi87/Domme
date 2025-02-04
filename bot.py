@@ -39,7 +39,7 @@ MODO_ATIVO = 1  # Começa no Modo 1 por padrão
 # Pontuação
 pontos = {DOMI_ID: 0, TATI_ID: 0}
 
-# Tarefas, compras e missões fictícias
+# Listas de tarefas, compras e missões
 TAREFAS = {
     DOMI_ID: ["Lavar a louça", "Organizar o armário", "Escrever um poema", "Fazer um chá", "Ler um capítulo de livro"],
     TATI_ID: ["Planejar a próxima semana", "Praticar meditação", "Fazer uma lista de desejos", "Criar uma playlist", "Escrever no diário"]
@@ -69,67 +69,67 @@ NYXIA_RESPONSES = {
     ]
 }
 
-# Sistema de desafios a cada 3 horas
+# Enviar missões automaticamente
 async def send_challenge():
-    """Envia desafios a cada 3 horas"""
+    """Envia missões a cada 3 horas"""
     domi_missao = random.choice(MISSOES[DOMI_ID])
     tati_missao = random.choice(MISSOES[TATI_ID])
     
-    await bot.send_message(chat_id=DOMI_ID, text=f"Sua missão: {domi_missao}")
-    await bot.send_message(chat_id=TATI_ID, text=f"Sua missão: {tati_missao}")
+    await bot.send_message(chat_id=DOMI_ID, text=f"✨ Sua missão: {domi_missao}")
+    await bot.send_message(chat_id=TATI_ID, text=f"✨ Sua missão: {tati_missao}")
 
+# Aceitar missões e pontuar
 async def obey(update, context):
-    """Usuário aceita o desafio e ganha pontos"""
     user_id = update.message.from_user.id
     if user_id not in AUTHORIZED_USERS:
         return await update.message.reply_text("Você não tem permissão para isso.")
-
+    
     pontos[user_id] += 10
-    await update.message.reply_text(f"Você aceitou o desafio e ganhou 10 pontos. Sua pontuação atual: {pontos[user_id]}.")
+    await update.message.reply_text(f"Missão aceita! Você ganhou 10 pontos. Pontuação atual: {pontos[user_id]}")
 
+# Mostrar pontuação
 async def show_points(update, context):
-    """Exibe a pontuação atual"""
     await update.message.reply_text(f"Pontos de Domi: {pontos[DOMI_ID]}\nPontos de Tati: {pontos[TATI_ID]}")
 
+# Listar tarefas
 async def handle_tasks(update, context):
     user_id = update.message.from_user.id
     if user_id not in AUTHORIZED_USERS:
         return await update.message.reply_text("Você não tem permissão para isso.")
     tasks = TAREFAS.get(user_id, [])
-    await update.message.reply_text(f"Suas tarefas: {', '.join(tasks)}")
+    await update.message.reply_text(f"📋 Suas tarefas: {', '.join(tasks)}")
 
+# Listar compras
 async def handle_shopping(update, context):
     user_id = update.message.from_user.id
     if user_id not in AUTHORIZED_USERS:
         return await update.message.reply_text("Você não tem permissão para isso.")
     shopping = COMPRAS.get(user_id, [])
-    await update.message.reply_text(f"Suas compras: {', '.join(shopping)}")
+    await update.message.reply_text(f"🛒 Suas compras: {', '.join(shopping)}")
 
+# Alterar modo da Domme
 async def set_mode(update, context):
-    """Permite mudar o modo da Domme usando o comando /modo"""
     global MODO_ATIVO
-
     user_id = update.message.from_user.id
     if user_id != ADMIN_ID:
         return await update.message.reply_text("Você não tem permissão para mudar os modos.")
-
     try:
         novo_modo = int(context.args[0])
         if novo_modo not in MODOS:
             raise ValueError
         MODO_ATIVO = novo_modo
-        await update.message.reply_text(f"🔹 Modo alterado para: {MODOS[MODO_ATIVO]}")
+        await update.message.reply_text(f"🔄 Modo alterado para: {MODOS[MODO_ATIVO]}")
     except (IndexError, ValueError):
         await update.message.reply_text("Uso correto: /modo <1, 2 ou 3>")
 
+# Responder mensagens usando OpenAI
 async def handle_message(update, context):
-    """Função para responder mensagens usando OpenAI"""
     user_message = update.message.text
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "Você é Domme N.Y.X.I.A., misteriosa e sofisticada, que controla este jogo."},
+                {"role": "system", "content": "Você é Domme N.Y.X.I.A., uma domme sofisticada e misteriosa, controlando este jogo."},
                 {"role": "user", "content": user_message},
             ]
         )
@@ -138,7 +138,7 @@ async def handle_message(update, context):
     except Exception as e:
         await update.message.reply_text(f"Erro ao processar sua mensagem: {e}")
 
-# Configuração dos manipuladores
+# Configuração dos comandos
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 app.add_handler(CommandHandler("obey", obey))
 app.add_handler(CommandHandler("points", show_points))
@@ -150,7 +150,7 @@ app.add_handler(CommandHandler("modo", set_mode))
 scheduler = AsyncIOScheduler(timezone=pytz.UTC)
 scheduler.add_job(send_challenge, "interval", hours=3)
 
-# Início do bot
+# Inicialização do bot
 async def main():
     scheduler.start()
     print("Bot iniciado!")
